@@ -51,10 +51,10 @@ public:
         return res;
     }
 
-    void writeBlock(int64_t blockNum, std::vector<T> const& block)
+    bool writeBlock(int64_t blockNum, std::vector<T> const& block)
     {
         if (block.size() != elementsPerBlock)
-            return;
+            return false;
 
         if (blockNum >= blocksCount)
         {
@@ -70,6 +70,7 @@ public:
         fseek(f, blockSize * blockNum, SEEK_SET);
         fwrite(block.data(), sizeof(T), elementsPerBlock, f);
         fflush(f);
+        return true;
     }
 
 private:
