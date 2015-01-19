@@ -7,6 +7,7 @@ public:
     ExternalHeap(std::string const& storageFileName, int64_t elementsPerBlock)
         : storage(storageFileName, elementsPerBlock, true /* TODO: allow reading heap from file in future */)
         , elementsPerBlock(elementsPerBlock)
+        , N(0)  /* TODO: allow reading heap from file in future */
     {
     }
 
@@ -16,7 +17,6 @@ public:
 
     void insert(T const& element)
     {
-        ++N;
         std::vector<T> block = storage.readBlock(N / elementsPerBlock);
         if (block.size() == 0)
         {
@@ -26,9 +26,13 @@ public:
         else
         {
             block[N % elementsPerBlock] = element;
+            std::sort(block.begin(), block.begin() + (N % elementsPerBlock) + 1);
         }
-        storage.writeBlock(N / elementsPerBlock, block);
-        /// TODO: fix heap
+        storage.writeBlock(N / elementsPerBlock, block); // ?
+
+        ++N;
+
+        // TODO: fix heap
     }
 
 private:
