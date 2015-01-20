@@ -51,10 +51,12 @@ public:
         return res;
     }
 
-    bool writeBlock(int64_t blockNum, std::vector<T> const& block)
+    bool writeBlock(int64_t blockNum, std::vector<T>& block)
     {
-        if (block.size() != elementsPerBlock)
+        if (block.size() > elementsPerBlock)
             return false;
+        if (block.size() < elementsPerBlock)
+            block.resize(elementsPerBlock);
 
         if (blockNum >= blocksCount)
         {
