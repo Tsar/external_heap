@@ -5,6 +5,8 @@
 
 #include "external_storage.h"
 
+struct NoElementsInHeapException {};
+
 template <class T>
 class ExternalHeap
 {
@@ -54,6 +56,36 @@ public:
 
         if (siftupNeeded)
             siftup(blockNum);
+    }
+
+    /// Получить количество элементов в куче
+    int64_t size()
+    {
+        return N;
+    }
+
+    /// Получить максимальный элемент (но не извлекать)
+    T getMax()
+    {
+        if (N == 0)
+            throw NoElementsInHeapException();
+
+        std::vector<T> block = storage.readBlock(0);
+        return block[0];
+    }
+
+    /// Извлечь максимальный элемент
+    T extractMax()
+    {
+        if (N == 0)
+            throw NoElementsInHeapException();
+
+        std::vector<T> block = storage.readBlock(0);
+        T res = block[0];
+
+        // TODO: the most interesting part
+
+        return res;
     }
 
     /// Распечатать содержимое кучи (использовать только для отладки)
