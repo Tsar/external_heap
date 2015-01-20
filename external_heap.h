@@ -103,15 +103,18 @@ private:
         if (blockNum == N / elementsPerBlock)  // если это последняя вершина кучи (мб недозаполненная)
             block.resize(N % elementsPerBlock);
 
-        std::vector<T> parent = storage.readBlock(blockNum / 2);
+        int64_t parentNum = (blockNum - 1) >> 1;
+        std::vector<T> parent = storage.readBlock(parentNum);
         while (blockNum > 0 && parent[elementsPerBlock - 1] < block[0])  // Пока не корень и нарушается свойство нашей кучи (все элементы родителя >= всех потомка)
         {
             remerge(parent, block);
             storage.writeBlock(blockNum, block);
+            storage.writeBlock(parentNum, parent);  // TODO: думать: по идее этот write должен быть уже после всего цикла и 1 раз
 
             block = parent;
-            blockNum /= 2;
-            parent = storage.readBlock(blockNum / 2);
+            blockNum = parentNum;
+            parentNum = (parentNum - 1) >> 1;
+            parent = storage.readBlock(parentNum);
         }
     }
 
