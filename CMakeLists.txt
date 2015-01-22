@@ -7,3 +7,4 @@ add_executable(test_external_storage test_external_storage.cpp external_storage.
 target_link_libraries(test_external_storage gtest)
 
 add_executable(test_external_heap test_external_heap.cpp external_heap.h external_storage.h)
+target_link_libraries(test_external_heap gtest)
