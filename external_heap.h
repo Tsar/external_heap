@@ -68,13 +68,13 @@ public:
     }
 
     /// Получить количество элементов в куче
-    int64_t size()
+	int64_t size() const
     {
         return N;
     }
 
 	/// Получить блок максимальных элементов (но не извлекать)
-	std::vector<T> getMaxBlock()
+	std::vector<T> getMaxBlock() const
     {
         if (N == 0)
             throw NoElementsInHeapException();
@@ -99,33 +99,34 @@ public:
 			return res;
 		}
 
-		int64_t blocksCount = (N + elementsPerBlock - 1) / elementsPerBlock;
-		std::vector<T> lastBlock = storage.readBlock(blocksCount - 1);
+		int64_t bCount = blocksCount();
+		std::vector<T> lastBlock = storage.readBlock(bCount - 1);
 		if (N % elementsPerBlock != 0 && N > 2 * elementsPerBlock)  // Если последний блок недозаполненный, то дополнить последними элементами из предпоследнего блока
 		{
 			lastBlock.resize(N % elementsPerBlock);
-			std::vector<T> preLastBlock = storage.readBlock(blocksCount - 2);
+			std::vector<T> preLastBlock = storage.readBlock(bCount - 2);
 			lastBlock.insert(lastBlock.end(), preLastBlock.begin() + (N % elementsPerBlock), preLastBlock.end());
 			assert(lastBlock.size() == elementsPerBlock);
+			std::sort(lastBlock.begin(), lastBlock.end(), std::greater<T>());
 		}
 
 		N -= lastBlock.size();
-		storage.writeBlock(0, lastBlock);
 
-		siftDown();
+		storage.writeBlock(0, lastBlock);
+		siftDown(0);
 
         return res;
     }
 
     /// Распечатать содержимое кучи (использовать только для отладки)
-    void debugPrint()
+	void debugPrint() const
     {
         printf("=================================================\n");
         printf("Elements in heap:   %ld\n", N);
         printf("Elements per block: %ld\n\n", elementsPerBlock);
 
-		int64_t blocksCount = (N + elementsPerBlock - 1) / elementsPerBlock;
-        for (int64_t i = 0; i < blocksCount; ++i)
+		int64_t bCount = blocksCount();
+		for (int64_t i = 0; i < bCount; ++i)
         {
             std::vector<T> block = storage.readBlock(i);
             size_t sz = (i == N / elementsPerBlock) ? (N % elementsPerBlock) : elementsPerBlock;
@@ -142,12 +143,12 @@ public:
 
 	/// Создать dot-файл (использовать только для отладки)
 	/// Команда для конвертации в ps: dot -Tps extheap.dot -o extheap.ps
-	void exportToDOT(std::string const& fileName)
+	void exportToDOT(std::string const& fileName) const
 	{
 		FILE* f = fopen(fileName.c_str(), "w");
 		fprintf(f, "graph Heap {\n  node [shape=box];");
-		int64_t blocksCount = (N + elementsPerBlock - 1) / elementsPerBlock;
-		for (int64_t i = 0; i < blocksCount; ++i)
+		int64_t bCount = blocksCount();
+		for (int64_t i = 0; i < bCount; ++i)
 		{
 			std::vector<T> block = storage.readBlock(i);
 			size_t sz = (i == N / elementsPerBlock) ? (N % elementsPerBlock) : elementsPerBlock;
@@ -157,11 +158,11 @@ public:
 			fprintf(f, "  b%ld [label=\"%s\"];\n", i, bStr.c_str());
 		}
 		fprintf(f, "\n");
-		for (int64_t i = 0; i < blocksCount; ++i)
+		for (int64_t i = 0; i < bCount; ++i)
 		{
-			if (i * 2 + 1 < blocksCount)
+			if (i * 2 + 1 < bCount)
 				fprintf(f, "  b%ld -- b%ld;\n", i, i * 2 + 1);
-			if (i * 2 + 2 < blocksCount)
+			if (i * 2 + 2 < bCount)
 				fprintf(f, "  b%ld -- b%ld;\n", i, i * 2 + 2);
 		}
 		fprintf(f, "}\n");
@@ -169,8 +170,13 @@ public:
 	}
 
 private:
+	int64_t blocksCount() const
+	{
+		return (N + elementsPerBlock - 1) / elementsPerBlock;
+	}
+
 	/// В toBeLarger в итоге будут бОльшие значение, а в toBeSmaller - меньшие
-    void remerge(std::vector<T>& toBeLarger, std::vector<T>& toBeSmaller)
+	void remerge(std::vector<T>& toBeLarger, std::vector<T>& toBeSmaller) const
     {
         assert(toBeLarger.size() == elementsPerBlock);
 
@@ -183,14 +189,14 @@ private:
         toBeLarger.resize(elementsPerBlock);
     }
 
-    /// Поднятие больших значений наверх
+	/// Поднятие больших значений наверх
 	void siftUp(int64_t blockNum)
     {
         if (blockNum == 0)
             return;
 
         std::vector<T> block = storage.readBlock(blockNum);
-        if (blockNum == N / elementsPerBlock)  // если это последняя вершина кучи (мб недозаполненная)
+		if (blockNum == N / elementsPerBlock)  // Если это последняя вершина кучи (мб недозаполненная)
             block.resize(N % elementsPerBlock);
 
 		std::vector<T> parent = storage.readBlock((blockNum - 1) >> 1);
@@ -207,9 +213,96 @@ private:
     }
 
 	/// Опускание маленьких значений вниз
-	void siftDown()
+	void siftDown(int64_t blockNum, std::vector<T>& block)
 	{
-		/// TODO
+		int64_t bCount = blocksCount();
+
+		while ((blockNum << 1) + 1 < bCount)  // Пока у текущей вершины есть хотя бы один ребёнок
+		{
+			std::vector<T> sonL = storage.readBlock((blockNum << 1) + 1);
+
+			if ((blockNum << 1) + 2 < bCount)  // Если у вершины 2 сына
+			{
+				std::vector<T> sonR = storage.readBlock((blockNum << 1) + 2);
+				if ((blockNum << 1) + 3 == bCount && (N % elementsPerBlock) > 0)  // Если sonR - последняя и недозаполненная вершина кучи
+					sonR.resize(N % elementsPerBlock);
+
+				if (block[elementsPerBlock - 1] >= sonL[0] && block[elementsPerBlock - 1] >= sonR[0])  // Если свойство кучи не нарушено
+					return;
+
+				if (block[elementsPerBlock - 1] >= sonL[0])  // Если свойство кучи нарушено только с ПРАВЫМ сыном (а с левым всё норм)
+				{
+					remerge(block, sonR);
+					storage.writeBlock(blockNum, block);
+
+					// Далее идём чинить sonR и под ним
+					blockNum = (blockNum << 1) + 2;
+					block = sonR;
+					continue;
+				}
+
+				else if (block[elementsPerBlock - 1] >= sonR[0])  // Если свойство кучи нарушено только с ЛЕВЫМ сыном (а с правым всё норм)
+				{
+					remerge(block, sonL);
+					storage.writeBlock(blockNum, block);
+
+					// Далее идём чинить sonL и под ним
+					blockNum = (blockNum << 1) + 1;
+					block = sonL;
+					continue;
+				}
+
+				else  // Если свойство кучи нарушено для обоих сыновей
+				{
+					if (sonL[elementsPerBlock - 1] > sonR[sonR.size() - 1])  // Если минимум в sonR
+					{
+						remerge(sonL, sonR);   // Делаем sonL > sonR (сохраняем минимум в sonR)
+						remerge(block, sonL);  // Делаем block > sonL
+						storage.writeBlock(blockNum, block);
+						storage.writeBlock((blockNum << 1) + 2, sonR);
+
+						// Далее идём чинить sonL и под ним
+						blockNum = (blockNum << 1) + 1;
+						block = sonL;
+						continue;
+					}
+					else  // Если минимум в sonL (или в обоих сыновьях)
+					{
+						remerge(sonR, sonL);   // Делаем sonR > sonL (сохраняем минимум в sonL)
+						remerge(block, sonR);  // Делаем block > sonR
+						storage.writeBlock(blockNum, block);
+						if (sonL.size() == elementsPerBlock)  // Если перед всей этой бодягой sonR не был последней недозаполненной вершиной
+							storage.writeBlock((blockNum << 1) + 1, sonL);
+						else
+						{
+							// Свопнули сыновей, чтобы недозаполненным был последний: у них детей нет, так что можно так сделать
+							storage.writeBlock((blockNum << 1) + 1, sonR);
+							storage.writeBlock((blockNum << 1) + 2, sonL);
+							return;
+						}
+
+						// Далее идём чинить sonR и под ним
+						blockNum = (blockNum << 1) + 2;
+						block = sonR;
+						continue;
+					}
+				}
+			}
+
+			else  // Если у вершины только 1 сын (в таком случае, он также является последней вершиной кучи)
+			{
+				if (block[elementsPerBlock - 1] >= sonL[0])  // Если свойство кучи не нарушено
+					return;
+
+				if ((N % elementsPerBlock) > 0)
+					sonL.resize(N % elementsPerBlock);
+
+				remerge(block, sonL);
+				storage.writeBlock(blockNum, block);
+				storage.writeBlock((blockNum << 1) + 1, sonL);
+				return;
+			}
+		}
 	}
 
     ExternalStorage<T> storage;

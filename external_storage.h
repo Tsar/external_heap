@@ -40,7 +40,7 @@ public:
         blocksCount = 0;
     }
 
-    std::vector<T> readBlock(int64_t blockNum)
+	std::vector<T> readBlock(int64_t blockNum) const
     {
         if (blockNum >= blocksCount)
             return std::vector<T>();
