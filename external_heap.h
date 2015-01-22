@@ -112,8 +112,7 @@ public:
 
 		N -= lastBlock.size();
 
-		storage.writeBlock(0, lastBlock);
-		siftDown(0);
+		siftDown(0, lastBlock);
 
         return res;
     }
@@ -228,7 +227,7 @@ private:
 					sonR.resize(N % elementsPerBlock);
 
 				if (block[elementsPerBlock - 1] >= sonL[0] && block[elementsPerBlock - 1] >= sonR[0])  // Если свойство кучи не нарушено
-					return;
+					break;
 
 				if (block[elementsPerBlock - 1] >= sonL[0])  // Если свойство кучи нарушено только с ПРАВЫМ сыном (а с левым всё норм)
 				{
@@ -241,7 +240,7 @@ private:
 					continue;
 				}
 
-				else if (block[elementsPerBlock - 1] >= sonR[0])  // Если свойство кучи нарушено только с ЛЕВЫМ сыном (а с правым всё норм)
+				if (block[elementsPerBlock - 1] >= sonR[0])  // Если свойство кучи нарушено только с ЛЕВЫМ сыном (а с правым всё норм)
 				{
 					remerge(block, sonL);
 					storage.writeBlock(blockNum, block);
@@ -252,47 +251,46 @@ private:
 					continue;
 				}
 
-				else  // Если свойство кучи нарушено для обоих сыновей
+				// Если свойство кучи нарушено для обоих сыновей
+
+				if (sonL[elementsPerBlock - 1] > sonR[sonR.size() - 1])  // Если минимум в sonR
 				{
-					if (sonL[elementsPerBlock - 1] > sonR[sonR.size() - 1])  // Если минимум в sonR
-					{
-						remerge(sonL, sonR);   // Делаем sonL > sonR (сохраняем минимум в sonR)
-						remerge(block, sonL);  // Делаем block > sonL
-						storage.writeBlock(blockNum, block);
-						storage.writeBlock((blockNum << 1) + 2, sonR);
+					remerge(sonL, sonR);   // Делаем sonL > sonR (сохраняем минимум в sonR)
+					remerge(block, sonL);  // Делаем block > sonL
+					storage.writeBlock(blockNum, block);
+					storage.writeBlock((blockNum << 1) + 2, sonR);
 
-						// Далее идём чинить sonL и под ним
-						blockNum = (blockNum << 1) + 1;
-						block = sonL;
-						continue;
-					}
-					else  // Если минимум в sonL (или в обоих сыновьях)
-					{
-						remerge(sonR, sonL);   // Делаем sonR > sonL (сохраняем минимум в sonL)
-						remerge(block, sonR);  // Делаем block > sonR
-						storage.writeBlock(blockNum, block);
-						if (sonL.size() == elementsPerBlock)  // Если перед всей этой бодягой sonR не был последней недозаполненной вершиной
-							storage.writeBlock((blockNum << 1) + 1, sonL);
-						else
-						{
-							// Свопнули сыновей, чтобы недозаполненным был последний: у них детей нет, так что можно так сделать
-							storage.writeBlock((blockNum << 1) + 1, sonR);
-							storage.writeBlock((blockNum << 1) + 2, sonL);
-							return;
-						}
-
-						// Далее идём чинить sonR и под ним
-						blockNum = (blockNum << 1) + 2;
-						block = sonR;
-						continue;
-					}
+					// Далее идём чинить sonL и под ним
+					blockNum = (blockNum << 1) + 1;
+					block = sonL;
+					continue;
 				}
+
+				// Если минимум в sonL (или в обоих сыновьях)
+
+				remerge(sonR, sonL);   // Делаем sonR > sonL (сохраняем минимум в sonL)
+				remerge(block, sonR);  // Делаем block > sonR
+				storage.writeBlock(blockNum, block);
+				if (sonL.size() == elementsPerBlock)  // Если перед всей этой бодягой sonR не был последней недозаполненной вершиной
+					storage.writeBlock((blockNum << 1) + 1, sonL);
+				else
+				{
+					// Свопнули сыновей, чтобы недозаполненным был последний: у них детей нет, так что можно так сделать
+					storage.writeBlock((blockNum << 1) + 1, sonR);
+					storage.writeBlock((blockNum << 1) + 2, sonL);
+					return;
+				}
+
+				// Далее идём чинить sonR и под ним
+				blockNum = (blockNum << 1) + 2;
+				block = sonR;
+				continue;
 			}
 
 			else  // Если у вершины только 1 сын (в таком случае, он также является последней вершиной кучи)
 			{
 				if (block[elementsPerBlock - 1] >= sonL[0])  // Если свойство кучи не нарушено
-					return;
+					break;
 
 				if ((N % elementsPerBlock) > 0)
 					sonL.resize(N % elementsPerBlock);
@@ -303,6 +301,7 @@ private:
 				return;
 			}
 		}
+		storage.writeBlock(blockNum, block);
 	}
 
     ExternalStorage<T> storage;
