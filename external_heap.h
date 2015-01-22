@@ -174,6 +174,11 @@ public:
 		fclose(f);
 	}
 
+	void printStorageStats() const
+	{
+		storage.printStats();
+	}
+
 private:
 	int64_t blocksCount() const
 	{

@@ -16,6 +16,8 @@ TEST(ExternalHeapTesting, TestWithOneElement)
 	EXPECT_EQ(maxBlock.size(), 1);
 	EXPECT_EQ(maxBlock[0], 10);
 	EXPECT_EQ(heap.size(), 0);
+
+	heap.printStorageStats();
 }
 
 void TestWithRandomElements(int64_t count, int64_t blockSize)
@@ -44,6 +46,8 @@ void TestWithRandomElements(int64_t count, int64_t blockSize)
 
 	EXPECT_EQ(pos, count);
 	EXPECT_EQ(heap.size(), 0);
+
+	heap.printStorageStats();
 }
 
 TEST(ExternalHeapTesting, TestWith100Elements)
