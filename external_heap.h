@@ -64,7 +64,7 @@ public:
         ++N;
 
         if (siftupNeeded)
-            siftup(blockNum);
+			siftUp(blockNum);
     }
 
     /// Получить количество элементов в куче
@@ -73,26 +73,46 @@ public:
         return N;
     }
 
-    /// Получить максимальный элемент (но не извлекать)
-    T getMax()
+	/// Получить блок максимальных элементов (но не извлекать)
+	std::vector<T> getMaxBlock()
     {
         if (N == 0)
             throw NoElementsInHeapException();
 
-        std::vector<T> block = storage.readBlock(0);
-        return block[0];
+		std::vector<T> res = storage.readBlock(0);
+		if (N < elementsPerBlock)
+			res.resize(N);
+		return res;
     }
 
-    /// Извлечь максимальный элемент
-    T extractMax()
+	/// Извлечь блок максимальных элементов
+	std::vector<T> extractMax()
     {
         if (N == 0)
             throw NoElementsInHeapException();
 
-        std::vector<T> block = storage.readBlock(0);
-        T res = block[0];
+		std::vector<T> res = storage.readBlock(0);
+		if (N <= elementsPerBlock)
+		{
+			res.resize(N);
+			N = 0;
+			return res;
+		}
 
-        // TODO: the most interesting part
+		int64_t blocksCount = (N + elementsPerBlock - 1) / elementsPerBlock;
+		std::vector<T> lastBlock = storage.readBlock(blocksCount - 1);
+		if (N % elementsPerBlock != 0 && N > 2 * elementsPerBlock)  // Если последний блок недозаполненный, то дополнить последними элементами из предпоследнего блока
+		{
+			lastBlock.resize(N % elementsPerBlock);
+			std::vector<T> preLastBlock = storage.readBlock(blocksCount - 2);
+			lastBlock.insert(lastBlock.end(), preLastBlock.begin() + (N % elementsPerBlock), preLastBlock.end());
+			assert(lastBlock.size() == elementsPerBlock);
+		}
+
+		N -= lastBlock.size();
+		storage.writeBlock(0, lastBlock);
+
+		siftDown();
 
         return res;
     }
@@ -104,7 +124,7 @@ public:
         printf("Elements in heap:   %ld\n", N);
         printf("Elements per block: %ld\n\n", elementsPerBlock);
 
-        int64_t blocksCount = (N + elementsPerBlock - 1) / elementsPerBlock;
+		int64_t blocksCount = (N + elementsPerBlock - 1) / elementsPerBlock;
         for (int64_t i = 0; i < blocksCount; ++i)
         {
             std::vector<T> block = storage.readBlock(i);
@@ -164,7 +184,7 @@ private:
     }
 
     /// Поднятие больших значений наверх
-    void siftup(int64_t blockNum)
+	void siftUp(int64_t blockNum)
     {
         if (blockNum == 0)
             return;
@@ -185,6 +205,12 @@ private:
         }
 		storage.writeBlock(blockNum, block);
     }
+
+	/// Опускание маленьких значений вниз
+	void siftDown()
+	{
+		/// TODO
+	}
 
     ExternalStorage<T> storage;
     int64_t elementsPerBlock;
