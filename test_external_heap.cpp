@@ -20,6 +20,64 @@ TEST(ExternalHeapTesting, TestWithOneElement)
 	heap.printStorageStats();
 }
 
+struct Task
+{
+	int priority;
+	int something;
+
+	Task() : priority(0), something(rand()) {}
+	Task(int priority) : priority(priority), something(rand()) {}
+};
+
+bool operator<(Task const& task1, Task const& task2)
+{
+	return task1.priority < task2.priority;
+}
+
+bool operator>(Task const& task1, Task const& task2)
+{
+	return task1.priority > task2.priority;
+}
+
+bool operator>=(Task const& task1, Task const& task2)
+{
+	return task1.priority >= task2.priority;
+}
+
+TEST(ExternalHeapTesting, TestWithFewElements)
+{
+	ExternalHeap<Task> heap("extheap.data", 3);
+
+	heap.insert(Task(5));
+	heap.insert(Task(1));
+	heap.insert(Task(3));
+	heap.insert(Task(6));
+	heap.insert(Task(4));
+
+	std::vector<Task> maxBlock = heap.extractMax();
+
+	EXPECT_EQ(maxBlock.size(), 3);
+	EXPECT_EQ(maxBlock[0].priority, 6);
+	EXPECT_EQ(maxBlock[1].priority, 5);
+	EXPECT_EQ(maxBlock[2].priority, 4);
+
+	heap.insert(Task(5));
+	heap.insert(Task(1));
+	heap.insert(Task(3));
+	heap.insert(Task(6));
+	heap.insert(Task(4));
+	heap.insert(Task(8));
+
+	maxBlock = heap.extractMax();
+
+	EXPECT_EQ(maxBlock.size(), 3);
+	EXPECT_EQ(maxBlock[0].priority, 8);
+	EXPECT_EQ(maxBlock[1].priority, 6);
+	EXPECT_EQ(maxBlock[2].priority, 5);
+
+	heap.printStorageStats();
+}
+
 void TestWithRandomElements(int64_t count, int64_t blockSize)
 {
 	ExternalHeap<int> heap("extheap.data", blockSize);
