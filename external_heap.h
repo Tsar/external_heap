@@ -67,6 +67,12 @@ public:
 			siftUp(blockNum);
     }
 
+	/// Пустая ли куча
+	bool empty() const
+	{
+		return N == 0;
+	}
+
     /// Получить количество элементов в куче
 	int64_t size() const
     {
