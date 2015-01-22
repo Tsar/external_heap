@@ -9,10 +9,11 @@ int main()
     std::string s;
     while (s != "exit")
     {
-        int32_t randVal = rand() % 20;
+		int32_t randVal = rand() % 1000;
         std::cout << "Inserting " << randVal << " to heap" << std::endl;
         heap.insert(randVal);
         heap.debugPrint();
+		heap.exportToDOT("extheap.dot");
 
         std::cin >> s;
     }

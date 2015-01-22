@@ -1,9 +1,18 @@
 #include <cassert>
 #include <iostream>
+#include <sstream>
 #include <iomanip>
 #include <algorithm>
 
 #include "external_storage.h"
+
+template <class T>
+std::string toString(T const& val)
+{
+	std::ostringstream oss;
+	oss << val;
+	return oss.str();
+}
 
 struct NoElementsInHeapException {};
 
@@ -111,7 +120,36 @@ public:
         printf("\n");
     }
 
+	/// Создать dot-файл (использовать только для отладки)
+	/// Команда для конвертации в ps: dot -Tps extheap.dot -o extheap.ps
+	void exportToDOT(std::string const& fileName)
+	{
+		FILE* f = fopen(fileName.c_str(), "w");
+		fprintf(f, "graph Heap {\n  node [shape=box];");
+		int64_t blocksCount = (N + elementsPerBlock - 1) / elementsPerBlock;
+		for (int64_t i = 0; i < blocksCount; ++i)
+		{
+			std::vector<T> block = storage.readBlock(i);
+			size_t sz = (i == N / elementsPerBlock) ? (N % elementsPerBlock) : elementsPerBlock;
+			std::string bStr;
+			for (size_t j = 0; j < sz; ++j)
+				bStr += toString(block[j]) + (j == sz - 1 ? "" : ", ");
+			fprintf(f, "  b%ld [label=\"%s\"];\n", i, bStr.c_str());
+		}
+		fprintf(f, "\n");
+		for (int64_t i = 0; i < blocksCount; ++i)
+		{
+			if (i * 2 + 1 < blocksCount)
+				fprintf(f, "  b%ld -- b%ld;\n", i, i * 2 + 1);
+			if (i * 2 + 2 < blocksCount)
+				fprintf(f, "  b%ld -- b%ld;\n", i, i * 2 + 2);
+		}
+		fprintf(f, "}\n");
+		fclose(f);
+	}
+
 private:
+	/// В toBeLarger в итоге будут бОльшие значение, а в toBeSmaller - меньшие
     void remerge(std::vector<T>& toBeLarger, std::vector<T>& toBeSmaller)
     {
         assert(toBeLarger.size() == elementsPerBlock);
@@ -135,19 +173,17 @@ private:
         if (blockNum == N / elementsPerBlock)  // если это последняя вершина кучи (мб недозаполненная)
             block.resize(N % elementsPerBlock);
 
-        int64_t parentNum = (blockNum - 1) >> 1;
-        std::vector<T> parent = storage.readBlock(parentNum);
+		std::vector<T> parent = storage.readBlock((blockNum - 1) >> 1);
         while (blockNum > 0 && parent[elementsPerBlock - 1] < block[0])  // Пока не корень и нарушается свойство нашей кучи (все элементы родителя >= всех потомка)
         {
             remerge(parent, block);
             storage.writeBlock(blockNum, block);
-            storage.writeBlock(parentNum, parent);  // TODO: думать: по идее этот write должен быть уже после всего цикла и 1 раз
 
-            block = parent;
-            blockNum = parentNum;
-            parentNum = (parentNum - 1) >> 1;
-            parent = storage.readBlock(parentNum);
+			block = parent;
+			blockNum = (blockNum - 1) >> 1;
+			parent = storage.readBlock((blockNum - 1) >> 1);
         }
+		storage.writeBlock(blockNum, block);
     }
 
     ExternalStorage<T> storage;
