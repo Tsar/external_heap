@@ -15,6 +15,7 @@ std::string toString(T const& val)
 }
 
 struct NoElementsInHeapException {};
+struct TooLargeBlockException {};
 
 template <class T>
 class ExternalHeap
@@ -66,6 +67,48 @@ public:
         if (siftupNeeded)
 			siftUp(blockNum);
     }
+
+	/// Добавление блока элементов (максимальный размер блока elementsPerBlock)
+	void insert(std::vector<T> const& block)
+	{
+		if (block.size() > elementsPerBlock)
+			throw TooLargeBlockException();
+
+		int64_t blockNum = N / elementsPerBlock;
+		if ((N % elementsPerBlock) == 0)
+		{
+			// Создаём новую вершину кучи
+			N += block.size();
+			std::sort(block.begin(), block.end(), std::greater<T>());
+			storage.writeBlock(blockNum, block);
+			siftUp(blockNum);
+			return;
+		}
+
+		std::vector<T> hblock = storage.readBlock(blockNum);
+		hblock.resize(N % elementsPerBlock);
+
+		if (hblock.size() + block.size() <= elementsPerBlock)
+		{
+			hblock.insert(hblock.end(), block.begin(), block.end());
+			N += block.size();
+			std::sort(hblock.begin(), hblock.end(), std::greater<T>());
+			storage.writeBlock(blockNum, hblock);
+			siftUp(blockNum);
+			return;
+		}
+
+		hblock.insert(hblock.end(), block.begin(), block.begin() + elementsPerBlock - (N % elementsPerBlock));
+		assert(hblock.size() == elementsPerBlock);
+		std::vector<T> newBlock(block.begin() + elementsPerBlock - (N % elementsPerBlock), block.end());
+		N += elementsPerBlock - (N % elementsPerBlock);
+		assert((N % elementsPerBlock) == 0);
+		std::sort(hblock.begin(), hblock.end(), std::greater<T>());
+		storage.writeBlock(blockNum, hblock);
+		siftUp(blockNum);
+
+		insert(newBlock);
+	}
 
 	/// Пустая ли куча
 	bool empty() const
