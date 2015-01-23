@@ -11,7 +11,7 @@ TEST(ExternalHeapTesting, TestWithOneElement)
 	heap.insert(10);
 	EXPECT_EQ(heap.size(), 1);
 
-	std::vector<int32_t> maxBlock = heap.extractMax();
+	std::vector<int32_t> maxBlock = heap.extractMaxBlock();
 
 	EXPECT_EQ(maxBlock.size(), 1);
 	EXPECT_EQ(maxBlock[0], 10);
@@ -54,7 +54,7 @@ TEST(ExternalHeapTesting, TestWithFewElements)
 	heap.insert(Task(6));
 	heap.insert(Task(4));
 
-	std::vector<Task> maxBlock = heap.extractMax();
+	std::vector<Task> maxBlock = heap.extractMaxBlock();
 
 	EXPECT_EQ(maxBlock.size(), 3);
 	EXPECT_EQ(maxBlock[0].priority, 6);
@@ -68,7 +68,7 @@ TEST(ExternalHeapTesting, TestWithFewElements)
 	heap.insert(Task(4));
 	heap.insert(Task(8));
 
-	maxBlock = heap.extractMax();
+	maxBlock = heap.extractMaxBlock();
 
 	EXPECT_EQ(maxBlock.size(), 3);
 	EXPECT_EQ(maxBlock[0].priority, 8);
@@ -78,7 +78,7 @@ TEST(ExternalHeapTesting, TestWithFewElements)
 	heap.printStorageStats();
 }
 
-void TestWithRandomElements(int64_t count, int64_t blockSize, int64_t insertionBlockSize)
+void TestBlockOperationsWithRandomElements(int64_t count, int64_t blockSize, int64_t insertionBlockSize)
 {
 	assert(blockSize >= insertionBlockSize);
 
@@ -104,7 +104,7 @@ void TestWithRandomElements(int64_t count, int64_t blockSize, int64_t insertionB
 	int64_t pos = 0;
 	while (!heap.empty())
 	{
-		next = heap.extractMax();
+		next = heap.extractMaxBlock();
 		EXPECT_EQ(heap.empty() || (next.size() == blockSize), true);
 		for (int64_t i = 0; i < next.size(); ++i)
 			EXPECT_EQ(next[i], testVector[pos++]);
@@ -116,16 +116,51 @@ void TestWithRandomElements(int64_t count, int64_t blockSize, int64_t insertionB
 	heap.printStorageStats();
 }
 
+void TestOneByOneOperationsWithRandomElements(int64_t count, int64_t blockSize)
+{
+	ExternalHeap<int> heap("extheap.data", blockSize);
+	std::vector<int> testVector;
+	for (int64_t i = 0; i < count; ++i)
+		testVector.push_back(rand());
+
+	for (int64_t i = 0; i < count; ++i)
+		heap.insert(testVector[i]);
+
+	EXPECT_EQ(heap.size(), count);
+
+	std::sort(testVector.begin(), testVector.end(), std::greater<int>());
+
+	int64_t pos = 0;
+	while (!heap.empty())
+	{
+		EXPECT_EQ(heap.extractMax(), testVector[pos++]);
+	}
+
+	EXPECT_EQ(pos, count);
+	EXPECT_EQ(heap.size(), 0);
+
+	heap.printStorageStats();
+}
+
 TEST(ExternalHeapTesting, TestWith100Elements)
 {
-	TestWithRandomElements(100, 5, 5);
-	TestWithRandomElements(100, 5, 3);
+	TestBlockOperationsWithRandomElements(100, 16, 16);
+	TestBlockOperationsWithRandomElements(100, 16, 11);
+
+	TestOneByOneOperationsWithRandomElements(100, 16);
+	TestOneByOneOperationsWithRandomElements(100, 16);
 }
 
 TEST(ExternalHeapTesting, TestWith10000Elements)
 {
-	TestWithRandomElements(10000, 4096, 4096);
-	TestWithRandomElements(10000, 4096, 3000);
+	TestBlockOperationsWithRandomElements(10000, 4096, 4096);
+	TestBlockOperationsWithRandomElements(10000, 4096, 3000);
+}
+
+TEST(ExternalHeapTesting, TestWith1000000Elements)
+{
+	TestBlockOperationsWithRandomElements(1000000, 4096, 4096);
+	TestBlockOperationsWithRandomElements(1000000, 4096, 3000);
 }
 
 int main(int argc, char* argv[])

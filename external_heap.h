@@ -32,7 +32,7 @@ public:
     {
     }
 
-    /// Добавление элемента
+	/// Добавление элемента (эффективнее добавлять блок элементов, если есть возможность)
     void insert(T const& element)
     {
         int64_t blockNum = N / elementsPerBlock;
@@ -122,6 +122,16 @@ public:
         return N;
     }
 
+	/// Получить максимальный элемент (но не извлекать)
+	T getMax() const
+	{
+		if (N == 0)
+			throw NoElementsInHeapException();
+
+		std::vector<T> block0 = storage.readBlock(0);
+		return block0[0];
+	}
+
 	/// Получить блок максимальных элементов (но не извлекать)
 	std::vector<T> getMaxBlock() const
     {
@@ -134,8 +144,38 @@ public:
 		return res;
     }
 
+	/// Извлечь максимальный элемент (эффективнее извлекать блок максимальных элементов, если есть возможность)
+	T extractMax()
+	{
+		if (N == 0)
+			throw NoElementsInHeapException();
+
+		std::vector<T> block0 = storage.readBlock(0);
+		T res = block0[0];
+
+		if (N <= elementsPerBlock)
+		{
+			--N;
+			std::swap(block0[0], block0[N]);
+			std::sort(block0.begin(), block0.begin() + N, std::greater<T>());
+			storage.writeBlock(0, block0);
+			return res;
+		}
+
+		int64_t bCount = blocksCount();
+		std::vector<T> lastBlock = storage.readBlock(bCount - 1);
+
+		block0[0] = lastBlock[(N % elementsPerBlock) > 0 ? (N % elementsPerBlock) - 1 : elementsPerBlock - 1];
+		--N;
+		std::sort(block0.begin(), block0.end(), std::greater<T>());
+
+		siftDown(0, block0);
+
+		return res;
+	}
+
 	/// Извлечь блок максимальных элементов
-	std::vector<T> extractMax()
+	std::vector<T> extractMaxBlock()
     {
         if (N == 0)
             throw NoElementsInHeapException();
@@ -231,10 +271,11 @@ private:
 	/// В toBeLarger в итоге будут бОльшие значение, а в toBeSmaller - меньшие
 	void remerge(std::vector<T>& toBeLarger, std::vector<T>& toBeSmaller) const
     {
-        assert(toBeLarger.size() == elementsPerBlock);
+		assert(toBeLarger.size() == elementsPerBlock || toBeSmaller.size() == elementsPerBlock);
 
         // TODO: может быть следует улучшить и делать настоящий merge
         toBeLarger.insert(toBeLarger.end(), toBeSmaller.begin(), toBeSmaller.end());
+		assert(toBeLarger.size() > elementsPerBlock);
         std::sort(toBeLarger.begin(), toBeLarger.end(), std::greater<T>());
 
         toBeSmaller.clear();
