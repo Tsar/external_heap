@@ -78,15 +78,23 @@ TEST(ExternalHeapTesting, TestWithFewElements)
 	heap.printStorageStats();
 }
 
-void TestWithRandomElements(int64_t count, int64_t blockSize)
+void TestWithRandomElements(int64_t count, int64_t blockSize, int64_t insertionBlockSize)
 {
+	assert(blockSize >= insertionBlockSize);
+
 	ExternalHeap<int> heap("extheap.data", blockSize);
 	std::vector<int> testVector;
 	for (int64_t i = 0; i < count; ++i)
 		testVector.push_back(rand());
 
-	for (int64_t i = 0; i < count; ++i)
-		heap.insert(testVector[i]);
+	std::vector<int> forInsertion;
+	for (int64_t i = 0; i < count; i += insertionBlockSize)
+	{
+		forInsertion.clear();
+		forInsertion.insert(forInsertion.end(), testVector.begin() + i, (i + insertionBlockSize < count) ? testVector.begin() + i + insertionBlockSize : testVector.end());
+		assert(forInsertion.size() <= insertionBlockSize);
+		heap.insert(forInsertion);
+	}
 
 	EXPECT_EQ(heap.size(), count);
 
@@ -110,12 +118,14 @@ void TestWithRandomElements(int64_t count, int64_t blockSize)
 
 TEST(ExternalHeapTesting, TestWith100Elements)
 {
-	TestWithRandomElements(100, 5);
+	TestWithRandomElements(100, 5, 5);
+	TestWithRandomElements(100, 5, 3);
 }
 
 TEST(ExternalHeapTesting, TestWith10000Elements)
 {
-	TestWithRandomElements(10000, 4096);
+	TestWithRandomElements(10000, 4096, 4096);
+	TestWithRandomElements(10000, 4096, 3000);
 }
 
 int main(int argc, char* argv[])

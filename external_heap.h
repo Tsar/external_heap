@@ -69,7 +69,7 @@ public:
     }
 
 	/// Добавление блока элементов (максимальный размер блока elementsPerBlock)
-	void insert(std::vector<T> const& block)
+	void insert(std::vector<T>& block)
 	{
 		if (block.size() > elementsPerBlock)
 			throw TooLargeBlockException();
