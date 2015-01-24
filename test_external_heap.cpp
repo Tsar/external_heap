@@ -157,10 +157,13 @@ TEST(ExternalHeapTesting, TestWith10000Elements)
     TestBlockOperationsWithRandomElements(10000, 4096, 3000);
 }
 
-TEST(ExternalHeapTesting, TestWith1000000Elements)
+TEST(ExternalHeapTesting, TestWithDifferentCountsOfElements)
 {
-    TestBlockOperationsWithRandomElements(1000000, 4096, 4096);
-    TestBlockOperationsWithRandomElements(1000000, 4096, 3000);
+    for (int64_t count = 100000; count <= 20000000; count += 100000)
+    {
+        std::cout << "### Count = " << count << std::endl;
+        TestBlockOperationsWithRandomElements(count, 4096, 4096);
+    }
 }
 
 int main(int argc, char* argv[])
