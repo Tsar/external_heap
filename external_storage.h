@@ -81,8 +81,7 @@ public:
 
     void printStats() const
     {
-        printf("Reads count:  %8ld\n", readsCount);
-        printf("Writes count: %8ld\n", writesCount);
+        printf("%ld\t%ld\n", readsCount, writesCount);
     }
 
 private:

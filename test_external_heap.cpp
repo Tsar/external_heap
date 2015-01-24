@@ -159,10 +159,11 @@ TEST(ExternalHeapTesting, TestWith10000Elements)
 
 TEST(ExternalHeapTesting, TestWithDifferentCountsOfElements)
 {
-    for (int64_t count = 100000; count <= 20000000; count += 100000)
+    for (int64_t count = 10000; count <= 2000000; count += 10000)
     {
-        std::cout << "### Count = " << count << std::endl;
+        printf("%ld\t", count);
         TestBlockOperationsWithRandomElements(count, 4096, 4096);
+        fflush(stdout);
     }
 }
 
