@@ -11,8 +11,8 @@ public:
         : storageFileName(storageFileName)
         , elementsPerBlock(elementsPerBlock)
         , blockSize(elementsPerBlock * sizeof(T))
-		, readsCount(0)
-		, writesCount(0)
+        , readsCount(0)
+        , writesCount(0)
     {
         if (clearStorage)
         {
@@ -42,7 +42,7 @@ public:
         blocksCount = 0;
     }
 
-	std::vector<T> readBlock(int64_t blockNum) const
+    std::vector<T> readBlock(int64_t blockNum) const
     {
         if (blockNum >= blocksCount)
             return std::vector<T>();
@@ -50,7 +50,7 @@ public:
         std::vector<T> res(elementsPerBlock);
         fseek(f, blockSize * blockNum, SEEK_SET);
         fread(res.data(), sizeof(T), elementsPerBlock, f);
-		++readsCount;
+        ++readsCount;
         return res;
     }
 
@@ -75,15 +75,15 @@ public:
         fseek(f, blockSize * blockNum, SEEK_SET);
         fwrite(block.data(), sizeof(T), elementsPerBlock, f);
         fflush(f);
-		++writesCount;
+        ++writesCount;
         return true;
     }
 
-	void printStats() const
-	{
-		printf("Reads count:  %8ld\n", readsCount);
-		printf("Writes count: %8ld\n", writesCount);
-	}
+    void printStats() const
+    {
+        printf("Reads count:  %8ld\n", readsCount);
+        printf("Writes count: %8ld\n", writesCount);
+    }
 
 private:
     FILE* f;
@@ -92,6 +92,6 @@ private:
     int64_t blockSize;
     int64_t blocksCount;
 
-	mutable int64_t readsCount;
-	mutable int64_t writesCount;
+    mutable int64_t readsCount;
+    mutable int64_t writesCount;
 };

@@ -6,169 +6,169 @@
 
 TEST(ExternalHeapTesting, TestWithOneElement)
 {
-	ExternalHeap<int32_t> heap("extheap.data", 4);
+    ExternalHeap<int32_t> heap("extheap.data", 4);
 
-	heap.insert(10);
-	EXPECT_EQ(heap.size(), 1);
+    heap.insert(10);
+    EXPECT_EQ(heap.size(), 1);
 
-	std::vector<int32_t> maxBlock = heap.extractMaxBlock();
+    std::vector<int32_t> maxBlock = heap.extractMaxBlock();
 
-	EXPECT_EQ(maxBlock.size(), 1);
-	EXPECT_EQ(maxBlock[0], 10);
-	EXPECT_EQ(heap.size(), 0);
+    EXPECT_EQ(maxBlock.size(), 1);
+    EXPECT_EQ(maxBlock[0], 10);
+    EXPECT_EQ(heap.size(), 0);
 
-	heap.printStorageStats();
+    heap.printStorageStats();
 }
 
 struct Task
 {
-	int priority;
-	int something;
+    int priority;
+    int something;
 
-	Task() : priority(0), something(rand()) {}
-	Task(int priority) : priority(priority), something(rand()) {}
+    Task() : priority(0), something(rand()) {}
+    Task(int priority) : priority(priority), something(rand()) {}
 };
 
 bool operator<(Task const& task1, Task const& task2)
 {
-	return task1.priority < task2.priority;
+    return task1.priority < task2.priority;
 }
 
 bool operator>(Task const& task1, Task const& task2)
 {
-	return task1.priority > task2.priority;
+    return task1.priority > task2.priority;
 }
 
 bool operator>=(Task const& task1, Task const& task2)
 {
-	return task1.priority >= task2.priority;
+    return task1.priority >= task2.priority;
 }
 
 TEST(ExternalHeapTesting, TestWithFewElements)
 {
-	ExternalHeap<Task> heap("extheap.data", 3);
+    ExternalHeap<Task> heap("extheap.data", 3);
 
-	heap.insert(Task(5));
-	heap.insert(Task(1));
-	heap.insert(Task(3));
-	heap.insert(Task(6));
-	heap.insert(Task(4));
+    heap.insert(Task(5));
+    heap.insert(Task(1));
+    heap.insert(Task(3));
+    heap.insert(Task(6));
+    heap.insert(Task(4));
 
-	std::vector<Task> maxBlock = heap.extractMaxBlock();
+    std::vector<Task> maxBlock = heap.extractMaxBlock();
 
-	EXPECT_EQ(maxBlock.size(), 3);
-	EXPECT_EQ(maxBlock[0].priority, 6);
-	EXPECT_EQ(maxBlock[1].priority, 5);
-	EXPECT_EQ(maxBlock[2].priority, 4);
+    EXPECT_EQ(maxBlock.size(), 3);
+    EXPECT_EQ(maxBlock[0].priority, 6);
+    EXPECT_EQ(maxBlock[1].priority, 5);
+    EXPECT_EQ(maxBlock[2].priority, 4);
 
-	heap.insert(Task(5));
-	heap.insert(Task(1));
-	heap.insert(Task(3));
-	heap.insert(Task(6));
-	heap.insert(Task(4));
-	heap.insert(Task(8));
+    heap.insert(Task(5));
+    heap.insert(Task(1));
+    heap.insert(Task(3));
+    heap.insert(Task(6));
+    heap.insert(Task(4));
+    heap.insert(Task(8));
 
-	maxBlock = heap.extractMaxBlock();
+    maxBlock = heap.extractMaxBlock();
 
-	EXPECT_EQ(maxBlock.size(), 3);
-	EXPECT_EQ(maxBlock[0].priority, 8);
-	EXPECT_EQ(maxBlock[1].priority, 6);
-	EXPECT_EQ(maxBlock[2].priority, 5);
+    EXPECT_EQ(maxBlock.size(), 3);
+    EXPECT_EQ(maxBlock[0].priority, 8);
+    EXPECT_EQ(maxBlock[1].priority, 6);
+    EXPECT_EQ(maxBlock[2].priority, 5);
 
-	heap.printStorageStats();
+    heap.printStorageStats();
 }
 
 void TestBlockOperationsWithRandomElements(int64_t count, int64_t blockSize, int64_t insertionBlockSize)
 {
-	assert(blockSize >= insertionBlockSize);
+    assert(blockSize >= insertionBlockSize);
 
-	ExternalHeap<int> heap("extheap.data", blockSize);
-	std::vector<int> testVector;
-	for (int64_t i = 0; i < count; ++i)
-		testVector.push_back(rand());
+    ExternalHeap<int> heap("extheap.data", blockSize);
+    std::vector<int> testVector;
+    for (int64_t i = 0; i < count; ++i)
+        testVector.push_back(rand());
 
-	std::vector<int> forInsertion;
-	for (int64_t i = 0; i < count; i += insertionBlockSize)
-	{
-		forInsertion.clear();
-		forInsertion.insert(forInsertion.end(), testVector.begin() + i, (i + insertionBlockSize < count) ? testVector.begin() + i + insertionBlockSize : testVector.end());
-		assert(forInsertion.size() <= insertionBlockSize);
-		heap.insert(forInsertion);
-	}
+    std::vector<int> forInsertion;
+    for (int64_t i = 0; i < count; i += insertionBlockSize)
+    {
+        forInsertion.clear();
+        forInsertion.insert(forInsertion.end(), testVector.begin() + i, (i + insertionBlockSize < count) ? testVector.begin() + i + insertionBlockSize : testVector.end());
+        assert(forInsertion.size() <= insertionBlockSize);
+        heap.insert(forInsertion);
+    }
 
-	EXPECT_EQ(heap.size(), count);
+    EXPECT_EQ(heap.size(), count);
 
-	std::sort(testVector.begin(), testVector.end(), std::greater<int>());
+    std::sort(testVector.begin(), testVector.end(), std::greater<int>());
 
-	std::vector<int> next;
-	int64_t pos = 0;
-	while (!heap.empty())
-	{
-		next = heap.extractMaxBlock();
-		EXPECT_EQ(heap.empty() || (next.size() == blockSize), true);
-		for (int64_t i = 0; i < next.size(); ++i)
-			EXPECT_EQ(next[i], testVector[pos++]);
-	}
+    std::vector<int> next;
+    int64_t pos = 0;
+    while (!heap.empty())
+    {
+        next = heap.extractMaxBlock();
+        EXPECT_EQ(heap.empty() || (next.size() == blockSize), true);
+        for (int64_t i = 0; i < next.size(); ++i)
+            EXPECT_EQ(next[i], testVector[pos++]);
+    }
 
-	EXPECT_EQ(pos, count);
-	EXPECT_EQ(heap.size(), 0);
+    EXPECT_EQ(pos, count);
+    EXPECT_EQ(heap.size(), 0);
 
-	heap.printStorageStats();
+    heap.printStorageStats();
 }
 
 void TestOneByOneOperationsWithRandomElements(int64_t count, int64_t blockSize)
 {
-	ExternalHeap<int> heap("extheap.data", blockSize);
-	std::vector<int> testVector;
-	for (int64_t i = 0; i < count; ++i)
-		testVector.push_back(rand());
+    ExternalHeap<int> heap("extheap.data", blockSize);
+    std::vector<int> testVector;
+    for (int64_t i = 0; i < count; ++i)
+        testVector.push_back(rand());
 
-	for (int64_t i = 0; i < count; ++i)
-		heap.insert(testVector[i]);
+    for (int64_t i = 0; i < count; ++i)
+        heap.insert(testVector[i]);
 
-	EXPECT_EQ(heap.size(), count);
+    EXPECT_EQ(heap.size(), count);
 
-	std::sort(testVector.begin(), testVector.end(), std::greater<int>());
+    std::sort(testVector.begin(), testVector.end(), std::greater<int>());
 
-	int64_t pos = 0;
-	while (!heap.empty())
-	{
-		EXPECT_EQ(heap.extractMax(), testVector[pos++]);
-	}
+    int64_t pos = 0;
+    while (!heap.empty())
+    {
+        EXPECT_EQ(heap.extractMax(), testVector[pos++]);
+    }
 
-	EXPECT_EQ(pos, count);
-	EXPECT_EQ(heap.size(), 0);
+    EXPECT_EQ(pos, count);
+    EXPECT_EQ(heap.size(), 0);
 
-	heap.printStorageStats();
+    heap.printStorageStats();
 }
 
 TEST(ExternalHeapTesting, TestWith100Elements)
 {
-	TestBlockOperationsWithRandomElements(100, 16, 16);
-	TestBlockOperationsWithRandomElements(100, 16, 11);
+    TestBlockOperationsWithRandomElements(100, 16, 16);
+    TestBlockOperationsWithRandomElements(100, 16, 11);
 
-	TestOneByOneOperationsWithRandomElements(100, 16);
-	TestOneByOneOperationsWithRandomElements(100, 16);
+    TestOneByOneOperationsWithRandomElements(100, 16);
+    TestOneByOneOperationsWithRandomElements(100, 16);
 }
 
 TEST(ExternalHeapTesting, TestWith10000Elements)
 {
-	TestBlockOperationsWithRandomElements(10000, 4096, 4096);
-	TestBlockOperationsWithRandomElements(10000, 4096, 3000);
+    TestBlockOperationsWithRandomElements(10000, 4096, 4096);
+    TestBlockOperationsWithRandomElements(10000, 4096, 3000);
 }
 
 TEST(ExternalHeapTesting, TestWith1000000Elements)
 {
-	TestBlockOperationsWithRandomElements(1000000, 4096, 4096);
-	TestBlockOperationsWithRandomElements(1000000, 4096, 3000);
+    TestBlockOperationsWithRandomElements(1000000, 4096, 4096);
+    TestBlockOperationsWithRandomElements(1000000, 4096, 3000);
 }
 
 int main(int argc, char* argv[])
 {
-	srand(time(0));
+    srand(time(0));
 
-	::testing::InitGoogleTest(&argc, argv);
-	return RUN_ALL_TESTS();
+    ::testing::InitGoogleTest(&argc, argv);
+    return RUN_ALL_TESTS();
 }
 
 /*
@@ -179,11 +179,11 @@ int main()
     std::string s;
     while (s != "exit")
     {
-		int32_t randVal = rand() % 1000;
+        int32_t randVal = rand() % 1000;
         std::cout << "Inserting " << randVal << " to heap" << std::endl;
         heap.insert(randVal);
         heap.debugPrint();
-		heap.exportToDOT("extheap.dot");
+        heap.exportToDOT("extheap.dot");
 
         std::cin >> s;
     }
